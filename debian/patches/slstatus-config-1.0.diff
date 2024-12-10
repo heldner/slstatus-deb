@@ -1,0 +1,14 @@
+diff --git a/config.def.h b/config.def.h
+index d805331..7e82907 100644
+--- a/config.def.h
++++ b/config.def.h
+@@ -65,5 +65,8 @@ static const char unknown_str[] = "n/a";
+  */
+ static const struct arg args[] = {
+ 	/* function format          argument */
+-	{ datetime, "%s",           "%F %T" },
++	{ mpdread,      "%s | ",    NULL },
++	{ battery_perc, "%s | ",    "BAT0" },
++	{ keymap,       "%s | ",    NULL },
++	{ datetime,     "%s",       "%a %d %b %H:%M" },
+ };

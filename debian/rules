@@ -1,0 +1,27 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+export DEB_BUILD_OPTIONS = noautodbgsym
+
+SHELL := sh -e
+VERSION ?= 1.0
+
+%:
+	dh ${@}
+
+override_dh_auto_clean:
+	rm -rf .pc
+	$(MAKE) clean
+
+slstatus.c:
+	[ -d "$(CURDIR)/slstatus" ] || \
+		git clone --depth 1 --branch $(VERSION) git://git.suckless.org/slstatus
+	mv slstatus/* .
+	rm -rf slstatus
+
+override_dh_auto_build: slstatus.c
+	QUILT_PATCHES=debian/patches quilt push -a
+	$(MAKE) PREFIX=/usr
+
+override_dh_auto_install:
+	$(MAKE) install DESTDIR=$(CURDIR)/debian/slstatus PREFIX=/usr

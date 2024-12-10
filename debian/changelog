@@ -1,0 +1,11 @@
+slstatus (1.0-2) stable; urgency=low
+
+  * slstatus 1.0
+  * debian:
+    - using quilt
+    - first release
+  * patches:
+    - mpd
+    - config
+
+ -- Stanislav Korolev <stan.korolev@mail.ru>  Tue, 10 Dec 2024 21:04:51 +0300

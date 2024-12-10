@@ -1,0 +1,124 @@
+diff --git a/Makefile b/Makefile
+index 4b764ec..76f2969 100644
+--- a/Makefile
++++ b/Makefile
+@@ -20,6 +20,7 @@ COM =\
+ 	components/load_avg\
+ 	components/netspeeds\
+ 	components/num_files\
++	components/mpd\
+ 	components/ram\
+ 	components/run_command\
+ 	components/swap\
+diff --git a/config.mk b/config.mk
+index 07af883..f8ddb72 100644
+--- a/config.mk
++++ b/config.mk
+@@ -2,6 +2,7 @@
+ VERSION = 1.0
+
+ # customize below to fit your system
++UNAME = $(shell uname)
+
+ # paths
+ PREFIX = /usr/local
+@@ -14,9 +15,11 @@ X11LIB = /usr/X11R6/lib
+ CPPFLAGS = -I$(X11INC) -D_DEFAULT_SOURCE -DVERSION=\"${VERSION}\"
+ CFLAGS   = -std=c99 -pedantic -Wall -Wextra -Wno-unused-parameter -Os
+ LDFLAGS  = -L$(X11LIB) -s
+-# OpenBSD: add -lsndio
+-# FreeBSD: add -lkvm -lsndio
+-LDLIBS   = -lX11
++LDLIBS   = -lX11 -lmpdclient
++
++LDLIBS_OpenBSD_mix = -lsndio
++LDLIBS_FreeBSD_mix = -lkvm -lsndio
++LDLIBS += $(LDLIBS_$(UNAME)_mix)
+
+ # compiler and linker
+ CC = cc
+diff --git a/slstatus.h b/slstatus.h
+index 8ef5874..17f750e 100644
+--- a/slstatus.h
++++ b/slstatus.h
+@@ -43,6 +43,9 @@ const char *keymap(const char *unused);
+ /* load_avg */
+ const char *load_avg(const char *unused);
+
++/* mpd client */
++const char *mpdread(const char *unused);
++
+ /* netspeeds */
+ const char *netspeed_rx(const char *interface);
+ const char *netspeed_tx(const char *interface);
+diff --git a/components/mpd.c b/components/mpd.c
+new file mode 100644
+index 0000000..f5837c6
+--- /dev/null
++++ b/components/mpd.c
+@@ -0,0 +1,65 @@
++#include <err.h>
++#include <stdio.h>
++
++#include <mpd/client.h>
++
++#include "../slstatus.h"
++#include "../util.h"
++
++typedef struct mpdarg {
++	char *host;
++	unsigned int port;
++} mpdarg;
++
++const char *
++mpdread(const char *unused)
++{
++	const char *buf;
++	const char *artist, *title, *name;
++	enum mpd_state state;
++	static struct mpd_connection *conn;
++	struct mpd_song *song;
++	struct mpd_status *status;
++
++  mpdarg mpd_args = { .host = NULL, .port = 0 };
++
++	conn = mpd_connection_new(mpd_args.host, mpd_args.port, 1000);
++	if (mpd_connection_get_error(conn) != MPD_ERROR_SUCCESS)
++		goto out;
++
++	mpd_send_status(conn);
++	status = mpd_recv_status(conn);
++	if (status == NULL)
++		goto out;
++
++	state = mpd_status_get_state(status);
++	mpd_status_free(status);
++	if (state != MPD_STATE_PLAY && state != MPD_STATE_PAUSE)
++		goto out;
++
++	mpd_send_current_song(conn);
++	song = mpd_recv_song(conn);
++	if (song == NULL) {
++		return NULL;
++	}
++
++	artist = mpd_song_get_tag(song, MPD_TAG_ARTIST, 0);
++	title = mpd_song_get_tag(song, MPD_TAG_TITLE, 0);
++	name = mpd_song_get_tag(song, MPD_TAG_NAME, 0);
++	if (artist != NULL && title != NULL) {
++		buf = bprintf("%s - %s", artist, title);
++	} else if (title != NULL) {
++		buf = bprintf("%s", title);
++	} else {
++		buf = bprintf("%s", name);
++	}
++	mpd_song_free(song);
++	mpd_response_finish(conn);
++	mpd_connection_free(conn);
++	conn = NULL;
++	return buf;
++out:
++	mpd_connection_free(conn);
++	conn = NULL;
++	return NULL;
++}
