@@ -1,7 +1,16 @@
 diff --git a/config.def.h b/config.def.h
-index d805331..7e82907 100644
+index d805331..e1fff45 100644
 --- a/config.def.h
 +++ b/config.def.h
+@@ -4,7 +4,7 @@
+ const unsigned int interval = 1000;
+ 
+ /* text to show if no value can be retrieved */
+-static const char unknown_str[] = "n/a";
++static const char unknown_str[] = "";
+ 
+ /* maximum output string length */
+ #define MAXLEN 2048
 @@ -65,5 +65,8 @@ static const char unknown_str[] = "n/a";
   */
  static const struct arg args[] = {
