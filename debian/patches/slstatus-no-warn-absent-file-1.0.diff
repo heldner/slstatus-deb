@@ -1,0 +1,12 @@
+diff --git a/util.c b/util.c
+index bca9b2e..5aa2941 100644
+--- a/util.c
++++ b/util.c
+@@ -129,7 +129,6 @@ pscanf(const char *path, const char *fmt, ...)
+ 	int n;
+ 
+ 	if (!(fp = fopen(path, "r"))) {
+-		warn("fopen '%s':", path);
+ 		return -1;
+ 	}
+ 	va_start(ap, fmt);
